@@ -1,0 +1,11 @@
+# Runtime dependencies (pinned). Python 3.12+.
+Django==5.2.18
+djangorestframework==3.16.1
+psycopg[binary]==3.2.13
+python-dotenv==1.2.4
+Markdown==3.11.1
+nh3==0.3.7
+# PDF rendering; needs Pango at the OS level (see README).
+weasyprint==66.0
+# Only used when PAYMENT_PROVIDER=stripe.
+stripe==12.5.1

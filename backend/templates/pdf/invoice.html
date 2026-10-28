@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm; @bottom-center { content: "{{ invoice.number }} · Page " counter(page) " of " counter(pages); font-size: 8pt; color: #94a3b8; } }
+  * { box-sizing: border-box; }
+  body { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 9.5pt; color: #0f172a; line-height: 1.45; }
+  .accent { color: {{ org.brand_color }}; }
+  .bar { height: 4px; background: {{ org.brand_color }}; margin-bottom: 18px; }
+  table { width: 100%; border-collapse: collapse; }
+  .header td { vertical-align: top; }
+  .logo { max-height: 46px; max-width: 180px; }
+  .org-name { font-size: 15pt; font-weight: 700; }
+  .muted { color: #64748b; }
+  .title { font-size: 22pt; font-weight: 700; letter-spacing: -0.5px; text-align: right; }
+  .meta { text-align: right; }
+  .meta td { padding: 1px 0; }
+  .label { color: #64748b; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.6px; }
+  .parties { margin: 26px 0 18px; }
+  .parties td { width: 50%; vertical-align: top; }
+  .items th { text-align: left; font-size: 8pt; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; border-bottom: 1px solid #cbd5e1; padding: 6px 4px; }
+  .items td { padding: 7px 4px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  .num { text-align: right; white-space: nowrap; }
+  .totals { width: 46%; margin-left: 54%; margin-top: 14px; }
+  .totals td { padding: 4px 4px; }
+  .totals .grand td { border-top: 1.5px solid #0f172a; font-weight: 700; font-size: 11pt; padding-top: 7px; }
+  .due td { font-weight: 700; color: {{ org.brand_color }}; font-size: 11pt; }
+  .stamp { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; }
+  .stamp-paid { background: #dcfce7; color: #166534; }
+  .stamp-overdue { background: #fee2e2; color: #991b1b; }
+  .stamp-void { background: #f1f5f9; color: #475569; }
+  .stamp-open { background: #e0e7ff; color: #3730a3; }
+  .notes { margin-top: 26px; padding-top: 12px; border-top: 1px solid #e2e8f0; }
+  .small { font-size: 8.5pt; }
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<table class="header">
+  <tr>
+    <td>
+      {% if logo %}<img class="logo" src="{{ logo }}" alt=""><br>{% endif %}
+      <div class="org-name">{{ org.name }}</div>
+      <div class="muted small">{{ org.address|linebreaksbr }}</div>
+      <div class="muted small">{% if org.email %}{{ org.email }}{% endif %}{% if org.phone %} · {{ org.phone }}{% endif %}</div>
+      {% if org.tax_id %}<div class="muted small">Tax ID: {{ org.tax_id }}</div>{% endif %}
+    </td>
+    <td class="meta">
+      <div class="title">INVOICE</div>
+      <div style="margin: 4px 0 8px;">
+        {% if status == "paid" %}<span class="stamp stamp-paid">Paid</span>
+        {% elif status == "overdue" %}<span class="stamp stamp-overdue">Overdue</span>
+        {% elif status == "void" %}<span class="stamp stamp-void">Void</span>
+        {% elif status == "draft" %}<span class="stamp stamp-void">Draft</span>
+        {% else %}<span class="stamp stamp-open">{{ invoice.get_status_display }}</span>{% endif %}
+      </div>
+      <table style="width:auto; margin-left:auto;">
+        <tr><td class="label" style="padding-right:12px;">Invoice no.</td><td><strong>{{ invoice.number }}</strong></td></tr>
+        <tr><td class="label" style="padding-right:12px;">Issue date</td><td>{{ invoice.issue_date|date:"M j, Y" }}</td></tr>
+        <tr><td class="label" style="padding-right:12px;">Due date</td><td>{{ invoice.due_date|date:"M j, Y" }}</td></tr>
+        {% if invoice.payment_terms %}<tr><td class="label" style="padding-right:12px;">Terms</td><td>{{ invoice.payment_terms }}</td></tr>{% endif %}
+      </table>
+    </td>
+  </tr>
+</table>
+
+<table class="parties">
+  <tr>
+    <td>
+      <div class="label">Bill to</div>
+      <div style="font-weight:700; margin-top:3px;">{{ client.name }}</div>
+      {% if client.contact_name %}<div>{{ client.contact_name }}</div>{% endif %}
+      <div class="muted small">{{ client.billing_address|linebreaksbr }}</div>
+      {% if client.billing_email or client.email %}<div class="muted small">{{ client.billing_email|default:client.email }}</div>{% endif %}
+      {% if client.tax_id %}<div class="muted small">Tax ID: {{ client.tax_id }}</div>{% endif %}
+    </td>
+    <td style="text-align:right;">
+      <div class="label">Amount due</div>
+      <div style="font-size:20pt; font-weight:700;" class="accent">{{ invoice.currency }} {{ invoice.amount_due }}</div>
+    </td>
+  </tr>
+</table>
+
+<table class="items">
+  <thead>
+    <tr><th style="width:52%;">Description</th><th class="num">Qty</th><th class="num">Rate</th><th class="num">Amount</th></tr>
+  </thead>
+  <tbody>
+  {% for line in lines %}
+    <tr>
+      <td>{{ line.description }}</td>
+      <td class="num">{{ line.quantity }}{% if line.unit %} {{ line.unit }}{% endif %}</td>
+      <td class="num">{{ line.unit_price }}</td>
+      <td class="num">{{ line.amount }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<table class="totals">
+  <tr><td>Subtotal</td><td class="num">{{ invoice.currency }} {{ invoice.subtotal }}</td></tr>
+  {% if invoice.discount_amount %}<tr><td>Discount{% if invoice.discount_type == "percent" %} ({{ invoice.discount_value|floatformat:"-2" }}%){% endif %}</td><td class="num">− {{ invoice.discount_amount }}</td></tr>{% endif %}
+  {% if invoice.tax_rate %}<tr><td>{{ invoice.tax_label }} ({{ invoice.tax_rate|floatformat:"-2" }}%)</td><td class="num">{{ invoice.tax_amount }}</td></tr>{% endif %}
+  <tr class="grand"><td>Total</td><td class="num">{{ invoice.currency }} {{ invoice.total }}</td></tr>
+  {% for payment in payments %}<tr><td class="muted">Payment {{ payment.received_at|date:"M j, Y" }}</td><td class="num muted">− {{ payment.amount }}</td></tr>{% endfor %}
+  {% for note in credit_notes %}<tr><td class="muted">Credit note {{ note.number }}</td><td class="num muted">− {{ note.amount }}</td></tr>{% endfor %}
+  <tr class="due"><td>Balance due</td><td class="num">{{ invoice.currency }} {{ invoice.amount_due }}</td></tr>
+</table>
+
+{% if invoice.notes or org.invoice_footer %}
+<div class="notes small">
+  {% if invoice.notes %}<div class="label">Notes</div><div style="margin-bottom:10px;">{{ invoice.notes|linebreaksbr }}</div>{% endif %}
+  {% if org.invoice_footer %}<div class="muted">{{ org.invoice_footer|linebreaksbr }}</div>{% endif %}
+</div>
+{% endif %}
+</body>
+</html>

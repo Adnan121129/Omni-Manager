@@ -1,0 +1,11 @@
+{% autoescape off %}
+Hello {{ client.contact_name|default:client.name }},
+
+{{ organization.name }} has shared "{{ document.title }}" with you for review and signature.
+
+Review and sign: {{ frontend_url }}/portal/documents/{{ document.id }}
+{% if document.expires_at %}
+Please respond before {{ document.expires_at|date:"M j, Y" }}.{% endif %}
+
+— {{ organization.name }}
+{% endautoescape %}

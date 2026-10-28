@@ -1,0 +1,13 @@
+{% autoescape off %}
+Hi {{ user.full_name }},
+
+{{ title }}
+{% if body %}
+{{ body }}
+{% endif %}{% if link %}
+Open in OmniManager: {{ frontend_url }}{{ link }}
+{% endif %}
+— {{ organization.name }} via OmniManager
+
+You can change which emails you receive under Settings → Notifications.
+{% endautoescape %}

@@ -1,0 +1,9 @@
+{% autoescape off %}
+Hello,
+
+{{ inviter.full_name }} invited you to join {{ organization.name }} on OmniManager as {{ role }}{% if client %} for {{ client.name }}{% endif %}.
+
+Accept the invitation: {{ link }}
+
+This invitation expires in 7 days.
+{% endautoescape %}

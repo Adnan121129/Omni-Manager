@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: A4; margin: 20mm 18mm 22mm; @bottom-center { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #94a3b8; } }
+  body { font-family: "DejaVu Sans", Helvetica, Arial, sans-serif; font-size: 9.5pt; color: #0f172a; line-height: 1.55; }
+  .bar { height: 4px; background: {{ org.brand_color }}; margin-bottom: 16px; }
+  .head { display: flex; justify-content: space-between; margin-bottom: 18px; }
+  .muted { color: #64748b; }
+  .small { font-size: 8.5pt; }
+  .logo { max-height: 40px; }
+  h1 { font-size: 18pt; margin: 6px 0 12px; letter-spacing: -0.3px; }
+  h2 { font-size: 12pt; margin: 18px 0 6px; }
+  h3 { font-size: 10.5pt; margin: 14px 0 4px; }
+  table.pricing { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  table.pricing th { text-align: left; font-size: 8pt; text-transform: uppercase; color: #64748b; border-bottom: 1px solid #cbd5e1; padding: 5px 4px; }
+  table.pricing td { border-bottom: 1px solid #e2e8f0; padding: 6px 4px; }
+  .num { text-align: right; }
+  .watermark { color: #b45309; background: #fef3c7; padding: 6px 10px; border-radius: 4px; font-size: 8.5pt; margin-bottom: 12px; }
+  .sigbox { margin-top: 28px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 14px 16px; page-break-inside: avoid; }
+  .sigimg { max-height: 70px; }
+  .typed { font-family: "DejaVu Serif", Georgia, serif; font-style: italic; font-size: 20pt; }
+  .cert { page-break-before: always; }
+  .cert table { width: 100%; border-collapse: collapse; font-size: 8pt; }
+  .cert td, .cert th { border-bottom: 1px solid #e2e8f0; padding: 5px 4px; vertical-align: top; text-align: left; }
+  .hash { font-family: "DejaVu Sans Mono", monospace; font-size: 7pt; word-break: break-all; color: #475569; }
+  .ok { color: #166534; font-weight: 700; }
+  .bad { color: #991b1b; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<table style="width:100%;"><tr>
+  <td>{% if logo %}<img class="logo" src="{{ logo }}" alt=""><br>{% endif %}<strong>{{ org.name }}</strong></td>
+  <td style="text-align:right;" class="muted small">{{ document.get_kind_display }} · {% if version %}Version {{ version.version }}{% else %}Draft{% endif %}<br>Prepared for {{ client.name }}</td>
+</tr></table>
+{% if draft %}<div class="watermark">Draft preview — not yet sent for signature.</div>{% endif %}
+<h1>{{ document.title }}</h1>
+{{ body_html|safe }}
+
+{% if signature %}
+<div class="sigbox">
+  <div class="muted small">Accepted electronically by</div>
+  {% if signature.method == "drawn" and signature.signature_image %}<img class="sigimg" src="{{ signature.signature_image }}" alt="Signature">{% else %}<div class="typed">{{ signature.signer_name }}</div>{% endif %}
+  <div><strong>{{ signature.signer_name }}</strong>{% if signature.signer_title %}, {{ signature.signer_title }}{% endif %} · {{ signature.signer_email }}</div>
+  <div class="muted small">Signed {{ signature.signed_at|date:"M j, Y H:i" }} UTC · IP {{ signature.ip_address|default:"n/a" }} · Version {{ signature.version.version }}</div>
+  <div class="hash">Document SHA-256: {{ signature.content_hash }}</div>
+</div>
+{% endif %}
+
+{% if version %}
+<div class="cert">
+  <h2>Audit certificate</h2>
+  <p class="small">Document: <strong>{{ document.title }}</strong> · Status: <strong>{{ document.get_status_display }}</strong> · Current version: {{ version.version }}</p>
+  <p class="hash">Content hash (SHA-256) of version {{ version.version }}: {{ version.content_hash }}</p>
+  <p class="small">Audit chain integrity: {% if chain.valid %}<span class="ok">Verified</span>{% else %}<span class="bad">Broken at event {{ chain.broken_at }}</span>{% endif %}</p>
+  {% if signature %}<p class="small muted">Consent recorded: “{{ signature.consent_text }}”</p>{% endif %}
+  <table>
+    <thead><tr><th>#</th><th>Event</th><th>Actor</th><th>Time (UTC)</th><th>Hash</th></tr></thead>
+    <tbody>
+    {% for ev in events %}
+      <tr><td>{{ ev.sequence }}</td><td>{{ ev.event }}{% if ev.version %} (v{{ ev.version }}){% endif %}</td><td>{{ ev.actor_label|default:"System" }}{% if ev.ip_address %}<br><span class="muted">IP {{ ev.ip_address }}</span>{% endif %}</td><td>{{ ev.created_at|date:"Y-m-d H:i:s" }}</td><td class="hash">{{ ev.hash }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="small muted" style="margin-top:12px;">Electronic acceptance captured by OmniManager's built-in signing flow. This record is not a qualified electronic signature.</p>
+</div>
+{% endif %}
+</body>
+</html>
